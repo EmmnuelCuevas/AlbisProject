@@ -1,0 +1,84 @@
+﻿@using BlazorApp.Dtos
+@using DataLayer.Models
+@using DataLogic.Repositories
+@using DataLogic.Helpers
+@using BlazorApp.Pages.Invoices
+@inject InvoiceDetailRepository _invoiceDetailRepository
+@inject ProductRepository _productRepository
+
+<div class="">
+
+    <h4><i class="fas fa-plus-circle" style="color: #667EEA;"></i></h4>
+
+    <div class=" justify-content-end" style="flex-direction:column">
+        <h4>Producto</h4>
+        <RadzenDropDown AllowClear="true" @bind-Value="@detail.Product" TValue="Product" AllowVirtualization="true" Style=""
+                        AllowFiltering="true" Data=@products TextProperty="Name" />
+    </div>
+    <div class="dropdown-divider" style="padding-bottom:1.5rem; "></div>
+    <EditForm Model="@detail" >
+        <DataAnnotationsValidator />
+
+        <div class="box-input">
+          
+            <div class=" col-md-4 input-box mb-4">
+                <h6><strong>Cantidad</strong> </h6>
+                <InputNumber class="form-control  user-inputs " @bind-Value="@detail.Quantity"></InputNumber>
+                <ValidationMessage For="() => detail.Quantity" />
+            </div>
+        </div>
+
+        <div class="opt-btn">
+            <button class="btn btn-lg text-white" style="background-color: #667EEA;" @onclick="Create">
+                Añadir
+            </button>
+            <button @onclick="CloseComponent" class="btn btn-lg  text-white" style="background-color: #A8A9AA;" type="button">
+                Cancelar
+            </button>
+        </div>
+    </EditForm>
+
+</div>
+
+@code {
+
+    [CascadingParameter]
+    public InvoiceComponent _parent { get; set; }
+
+    [Parameter]
+    public bool update{ get; set; }
+
+    private InvoiceDetail detail = new InvoiceDetail();
+    private List<Product> products = new List<Product>();
+
+    protected override void OnInitialized()
+    {
+        products = _productRepository.GetAll();
+    }
+    private void Create()
+    {
+        try
+        {
+
+            //  add detail to list in parent 
+            // add subtotal , total ,
+            detail.ProductID = detail.Product.ID;
+            detail.SubTotal = _invoiceDetailRepository.GetSubTotal(detail);
+            detail.Total = _invoiceDetailRepository.GetTotal(detail);
+            _parent.AddDetails(detail);
+            // add notification
+
+        }
+        catch (Exception err)
+        {
+            // error = err.ToString();
+        }
+        
+
+    }
+
+    private void CloseComponent()
+    {
+        _parent.CloseCreateComponent();
+    }
+}

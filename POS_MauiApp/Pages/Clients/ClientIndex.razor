@@ -1,0 +1,154 @@
+﻿@page "/clients"
+@using DataLogic.Repositories
+@using DataLayer.Models
+@inject ClientRepository _clientRepository
+
+<div class="card crud-card" >
+    <h4><strong> Clientes </strong></h4>
+
+    <div class="card-body crud-card-body">
+
+        <RadzenDataGrid Data="@client" TItem="Client" PagerPosition="PagerPosition.Bottom" AllowPaging="true" AllowSorting="true" PageSize="10"
+                        SelectionMode="DataGridSelectionMode.Single" @bind-Value=@selected>
+            <Columns>
+
+                <RadzenDataGridColumn TItem="Client" Property="Name" Title="Nombre" />
+                <RadzenDataGridColumn TItem="Client" Property="Rnc" Title="RNC" />
+                <RadzenDataGridColumn TItem="Client" Property="PhoneNumber" Title="Numero Telefono" />
+                <RadzenDataGridColumn TItem="Client" Property="Address" Title="Dirección" />
+            </Columns>
+        </RadzenDataGrid>
+
+        @*<RadzenPager ShowPagingSummary="true" PagingSummaryFormat="@paginationService.pagingSummaryFormat" HorizontalAlign="HorizontalAlign.Right" Count="@paginationService.count" PageSize="@paginationService.pageIndex" PageNumbersCount="10" PageChanged="@PageChanged" />*@
+
+
+        <div class="options ">
+            <div>
+                    <a @onclick="@OpenEditModal" style="margin-right:10px"><i class="fas fa-edit"></i> Editar</a>
+                    <a @onclick="@OpenDeleteModal" data-toggle="modal" data-target="#exampleModal"><i class="fas fa-trash-alt"></i> Eliminar</a>
+            </div>
+            <div>
+                    <a @onclick="@OpenCreateModal"><i class="fas fa-plus-circle" style="color: #667EEA;"></i> Agregar Cliente</a>
+            </div>
+        </div>
+
+
+
+        @if (createBtn)
+        {
+                <div class="card" style="margin-top:5rem;">
+
+                    <div class="card-body ">
+                        <CascadingValue Value="this">
+                            <ClientCreateUpdate update=false client="new Client()" ></ClientCreateUpdate>
+                        </CascadingValue>
+                    </div>
+                </div>
+
+        }
+        else if (editBtn)
+        {
+                <div class="card" style="margin-top:5rem;">
+                    <div class="card-body ">
+                    @if (selected != null)
+                    {
+                        <CascadingValue Value="this">
+                            <ClientCreateUpdate update=true client="selected[0]"></ClientCreateUpdate>
+                        </CascadingValue>
+                    }
+                    </div>
+                </div>
+        }
+        @if (delBtn)
+        {
+                <!-- Modal -->
+                <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+
+                            <div class="modal-body text-center">
+                                <i class="fas fa-exclamation fa-5x" style="color: #F8BB85"></i>
+                                <h2> Eliminar</h2>
+                                <h4>Esta seguro que desea proceder ?  </h4>
+                            </div>
+                            <div class=" text-center mb-5">
+                                <button @onclick="@Delete" class="btn btn-primary" style="padding:0.5rem 2.5rem" data-dismiss="modal">Si</button>
+                                <button class="btn btn-danger" data-dismiss="modal" style="padding:0.5rem 2.5rem">No</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        }
+
+
+    </div>
+</div>
+
+@code {
+    private List<Client> client = new List<Client>();
+    private IList<Client> selected;
+    private bool createBtn;
+    private bool editBtn;
+    private bool delBtn;
+
+    protected override void OnInitialized()
+    {
+        client = _clientRepository.GetAll();
+    }
+    private void Delete()
+    {
+
+    }
+    public void CloseCreateComponent()
+    {
+        this.createBtn = false;
+        StateHasChanged();
+    }
+
+    public void CloseEditComponent()
+    {
+        this.editBtn = false;
+        StateHasChanged();
+    }
+    public void OpenCreateModal()
+    {
+        this.editBtn = false;
+        this.delBtn = false;
+        this.createBtn = true;
+
+    }
+
+    public void OpenEditModal()
+    {
+        if (selected != null)
+        {
+
+            this.createBtn = false;
+            this.delBtn = false;
+            this.editBtn = true;
+        }
+        else
+        {
+        }
+    }
+
+    public void OpenDeleteModal()
+    {
+        if (selected != null)
+        {
+            this.createBtn = false;
+            this.editBtn = false;
+            delBtn = true;
+        }
+        else
+        {
+        }
+        StateHasChanged();
+    }
+
+    public void RefreshState()
+    {
+        client = _clientRepository.GetAll();
+        StateHasChanged();
+    }
+}

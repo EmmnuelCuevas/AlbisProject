@@ -1,0 +1,464 @@
+﻿@page "/"
+@page "/invoicesedit/{id}"
+@using POS_MauiApp.Dtos
+@using DataLayer.Context
+@using DataLogic.Repositories
+@using DataLayer.Models
+@using POS_MauiApp.Pages.InvoicesDetails
+@using Microsoft.EntityFrameworkCore
+@inject InvoiceRepository _invoiceRepository
+@inject ClientRepository _clientRepository
+@inject InvoiceDetailRepository _invoiceDetailRepository
+@inject ProductRepository _productRepository
+@inject IJSRuntime _jsRuntime
+@inject NavigationManager _navigationManager
+
+<div class="card crud-card">
+    <h3> @errorInvoice </h3>
+    <div style="display:flex; ">
+        <div class=" justify-content-end" style="flex-direction:column;margin-right:2rem;">
+            <h4>Cliente</h4>
+            <RadzenDropDown AllowClear="true" @bind-Value="@componentDTO.Invoice.Client" TValue="Client" AllowVirtualization="true" Style=""
+                            AllowFiltering="true" Data=@componentDTO.Clients TextProperty="Name" Disabled="@edit"/>
+        </div>
+
+        <div class=" justify-content-end" style="flex-direction:column">
+            @if (componentDTO.Invoice.Client is not null)
+            {
+                <h4>Proyecto</h4>
+                <RadzenDropDown AllowClear="true" @bind-Value="@componentDTO.ProjectID" TValue="string" AllowVirtualization="true" Style=""
+                            AllowFiltering="true" Data=@componentDTO.Invoice.Client.Projects ValueProperty="ID" TextProperty="Name" />
+            }
+        </div>
+    </div>
+
+
+
+    <div class="card-body crud-card-body">
+        <RadzenDataGrid @ref="@grid" Data="@componentDTO.Details" TItem="InvoiceDetail" AllowPaging="true" AllowSorting="true" PageSize="10"
+                        SelectionMode="DataGridSelectionMode.Single" @bind-Value=@selected Responsive="true">
+            <Columns>
+                <RadzenDataGridColumn TItem="InvoiceDetail" Title="Producto">
+                    <Template Context="data">
+                        @if (@data.Product.Name != null)
+                        {
+                            @data.Product.Name
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="InvoiceDetail" Title="Precio">
+                    <Template Context="data">
+                        @data.Price
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="InvoiceDetail" Title="Cantidad">
+                    <Template Context="data">
+                        @data.Quantity
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="InvoiceDetail" Title="Descuento">
+                    <Template Context="data">
+
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="InvoiceDetail" Property="SubTotal" Title="SubTOtal" />
+                <RadzenDataGridColumn TItem="InvoiceDetail" Title="Impuestos">
+                    <Template Context="data">
+                    @if(data.Product.HasTaxes)
+                    {
+                        <span>$</span>@((data.Product.Price * data.Quantity) * 0.18)
+                    }
+                    else
+                    {
+                        <span>$0.00</span>
+                    }
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="InvoiceDetail" Property="Total" Title="Total" />
+            </Columns>
+        </RadzenDataGrid>
+
+        <div class="options ">
+            <div>
+                <a  class="btn btn-sm" @onclick="@OpenEditModal" style="margin-right:10px"><i class="fas fa-edit"></i> Editar</a>
+                <a  class="btn btn-sm" @onclick="@OpenDeleteModal" data-toggle="modal" data-target="#exampleModal"><i class="fas fa-trash-alt"></i> Eliminar</a>
+            </div>
+            <div>
+                <a class="btn btn-primary text-white" @onclick="CreateInvoice" style="margin-right:10px"><i class="fas fa-edit"></i> @(edit == true ? "MODIFICAR":"FACTURAR") </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+@if (createBtn)
+{
+    <div class="card" style="margin-top:5rem;">
+
+        <div class="card-body ">
+            <CascadingValue Value="this">
+                <InvoiceDetailsCreate update=false> </InvoiceDetailsCreate>
+            </CascadingValue>
+        </div>
+    </div>
+
+}
+else if (editBtn)
+{
+    <div class="card" style="margin-top:5rem;">
+        <div class="card-body ">
+            @if (selected != null)
+            {
+                <CascadingValue Value="this">
+                    <InvoiceDetailsCreate update=true> </InvoiceDetailsCreate>
+                </CascadingValue>
+            }
+        </div>
+    </div>
+}
+@if (delBtn)
+{
+    <!-- Modal -->
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+
+                <div class="modal-body text-center">
+                    <i class="fas fa-exclamation fa-5x" style="color: #F8BB85"></i>
+                    <h2> Eliminar</h2>
+                    <h4>Esta seguro que desea proceder ?  </h4>
+                </div>
+                <div class=" text-center mb-5">
+                    <button @onclick="@Delete" class="btn btn-primary" style="padding:0.5rem 2.5rem" data-dismiss="modal">Si</button>
+                    <button class="btn btn-danger" data-dismiss="modal" style="padding:0.5rem 2.5rem">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="card card-crud" style="margin-top:5rem;">
+    <div class="card-body card-crud-body">
+        <div style="display:flex;">
+            <div class=" justify-content-end" style="flex-direction:column; margin-right:2rem;">
+                <h4>Producto</h4>
+                <RadzenDropDown AllowClear="true" @bind-Value="@currentDetail.Product" TValue="Product" AllowVirtualization="true" Style=""
+                                AllowFiltering="true" Data=@componentDTO.Products  TextProperty="Name" Disabled="edit"/>
+            </div>
+            @if (currentDetail.Product is not null)
+            {
+                <div class=" justify-content-end" style="flex-direction:column;">
+                    <h4>Disponibilidad</h4>
+                    <RadzenNumeric Disabled="true" @bind-Value="currentDetail.Product.AvailableQuantity"></RadzenNumeric>
+                </div>
+            }
+
+        </div>
+    </div>
+    <div class="dropdown-divider" style="padding-bottom:1.5rem; "></div>
+
+    <div class="box-input">
+
+        <div class=" col-md-4 input-box mb-4">
+            <h6><strong>Cantidad</strong> </h6>
+            <h6 class="text-danger">@error</h6>
+            <RadzenNumeric class="form-control  user-inputs" TValue="int" @bind-Value="@currentDetail.Quantity"></RadzenNumeric>
+        </div>
+    </div>
+
+    <div class="opt-btn">
+        <button class="btn btn-lg text-white" style="background-color: #667EEA;" @onclick="(edit == true) ? EditDetail : CreateDetail">
+            Añadir
+        </button>
+
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string id { get; set; }
+    private IList<InvoiceDetail> selected { get; set; }
+    private InvoiceDetail currentDetail = new InvoiceDetail();
+    private InvoiceComponentDTO componentDTO = new InvoiceComponentDTO();
+    private Invoice invoice = new Invoice();
+    private RadzenDataGrid<InvoiceDetail> grid;
+    private bool edit;
+    private bool createBtn;
+    private bool editBtn;
+    private bool delBtn;
+    private bool lista = true;
+    private string error = "";
+    private string errorInvoice = "";
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            
+            if(!string.IsNullOrEmpty(id))
+            {
+                invoice = _invoiceRepository.db.Invoices.Include(x=>x.Client).Include(x=>x.InvoiceDetails).ThenInclude(x=>x.Product).Include(x=>x.Project).FirstOrDefault(x=>x.ID== id);
+                if(invoice != null)
+                {
+                    componentDTO.Invoice = invoice;
+                    componentDTO.ProjectID = invoice.ProjectID;
+                    componentDTO.Details = invoice.InvoiceDetails.ToList();
+                    edit = true;
+                }
+            }else
+            {
+                componentDTO.Clients = _clientRepository.db.Clients.Include(b => b.Projects).ToList();
+            }
+            componentDTO.Products = _productRepository.GetAll();
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+
+    }
+    private void CreateDetail()
+    {
+        try
+        {
+            if (currentDetail.Product is null)
+            {
+                error = "Elegir producto";
+                StateHasChanged();
+                return;
+            }
+
+            if (currentDetail.Product.AvailableQuantity < currentDetail.Quantity)
+            {
+                error = "No hay suficientes items";
+                StateHasChanged();
+                return;
+            }
+            currentDetail.ProductID = currentDetail.Product.ID;
+            currentDetail.Discount = 0;
+            currentDetail.Price  = currentDetail.Product.Price;
+            currentDetail.SubTotal = _invoiceDetailRepository.GetSubTotal(currentDetail);
+            currentDetail.Total = _invoiceDetailRepository.GetTotal(currentDetail);
+            currentDetail.InvoiceID = componentDTO.Invoice.ID;
+            this.AddDetails(currentDetail);
+
+            grid.Reload();
+            // add notification
+            //lista = false;
+            currentDetail = new InvoiceDetail();
+            error = "";
+            StateHasChanged();
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    private void EditDetail()
+    {
+        try
+        {
+            if (currentDetail.Product is null)
+            {
+                error = "Elegir producto";
+                StateHasChanged();
+                return;
+            }
+
+            if (currentDetail.Product.AvailableQuantity < currentDetail.Quantity)
+            {
+                error = "No hay suficientes items";
+                StateHasChanged();
+                return;
+            }
+            // gets obj in list
+            var index = componentDTO.Details.IndexOf(selected[0]);
+           
+            // modify obj
+            currentDetail.ProductID = currentDetail.Product.ID;
+            currentDetail.Discount = 0;
+            currentDetail.Price = currentDetail.Product.Price;
+            currentDetail.SubTotal = _invoiceDetailRepository.GetSubTotal(currentDetail);
+            currentDetail.Total = _invoiceDetailRepository.GetTotal(currentDetail);
+
+            // updates obj in list
+            componentDTO.Details[index] = currentDetail;
+            grid.Reload();
+            // add notification
+            //lista = false;
+            currentDetail = new InvoiceDetail();
+            error = "";
+            StateHasChanged();
+        }
+        catch (Exception)
+        {
+            
+            throw;
+        }             
+    }
+    private async void CreateInvoice()
+    {
+        try
+        {
+            if (componentDTO.Invoice.Client is null)
+            {
+                errorInvoice = "Elegir cliente";
+                StateHasChanged();
+                return;
+            }
+            if (componentDTO.ProjectID is null)
+            {
+                errorInvoice = "Elegir proyecto";
+                StateHasChanged();
+                return;
+            }
+
+            if (!componentDTO.Details.Any())
+            {
+                errorInvoice = "Elegir productos";
+                StateHasChanged();
+                return;
+            }
+
+            @if (!edit)
+            {
+                componentDTO.CreateInvoice(componentDTO.Invoice.Client.ID, componentDTO.ProjectID);
+                var result = _invoiceRepository.Create(componentDTO.Invoice);
+                if (result.Success)
+                {
+                    foreach (var item in componentDTO.Details)
+                    {
+                        if (item.Product.AvailableQuantity < item.Quantity)
+                            return;
+
+                        item.Product.AvailableQuantity -= item.Quantity;
+                        _invoiceDetailRepository.Create(item);
+                        // weak spot . 
+                    }
+                    await _jsRuntime.InvokeVoidAsync("open", $"print/{componentDTO.Invoice.ID}", "_blank");
+                    CleanComponent();
+                    StateHasChanged();
+                }
+              
+            }
+            else
+            {
+                // eliminar todas l
+                foreach (var item in componentDTO.Details)
+                {
+                    if (item.Product.AvailableQuantity < item.Quantity)
+                        return;
+
+                    InvoiceDetail unmodifiedInvoiceDetail;
+                    using (var dbContext = new AppDbContext())
+                    {
+                       unmodifiedInvoiceDetail =  dbContext.InvoiceDetails.FirstOrDefault(x => x.ID == item.ID);
+                    }
+                    if(unmodifiedInvoiceDetail is not null)
+                    {
+                        var qtyDifference = unmodifiedInvoiceDetail.Quantity - item.Quantity;
+                        item.Product.AvailableQuantity += qtyDifference;
+                        _invoiceDetailRepository.Update(item);
+                    }
+                    else
+                    {
+                        item.Product.AvailableQuantity -= item.Quantity;
+                        _invoiceDetailRepository.Create(item);
+                    }
+
+                }
+                componentDTO.EditInvoice(componentDTO.Invoice);
+                var result = _invoiceRepository.Update(componentDTO.Invoice);
+                if (result.Success)
+                {
+                    await _jsRuntime.InvokeVoidAsync("open", $"print/{componentDTO.Invoice.ID}", "_blank");
+                }
+            }
+
+    }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+    private void Delete()
+    {
+
+    }
+    public void CloseCreateComponent()
+    {
+        this.createBtn = false;
+        StateHasChanged();
+    }
+
+    public void CloseEditComponent()
+    {
+        this.editBtn = false;
+        StateHasChanged();
+    }
+    public void OpenCreateModal()
+    {
+        this.editBtn = false;
+        this.delBtn = false;
+        this.createBtn = true;
+
+    }
+
+    public void OpenEditModal()
+    {
+        if (selected != null)
+        {
+            currentDetail = selected[0];
+        }
+        else
+        {
+        }
+    }
+
+    public void OpenDeleteModal()
+    {
+        if (selected != null)
+        {
+            this.createBtn = false;
+            this.editBtn = false;
+            delBtn = true;
+        }
+        else
+        {
+        }
+        StateHasChanged();
+    }
+
+    public void RefreshState()
+    {
+        try
+        {
+            componentDTO.Clients = _clientRepository.db.Clients.Include(b => b.Projects).ToList();
+            componentDTO.Products = _productRepository.GetAll();
+            StateHasChanged();
+        }
+        catch (Exception)
+        {
+
+            throw;
+        }
+
+    }
+
+    public void CleanComponent()
+    {
+        currentDetail = new InvoiceDetail();
+        componentDTO = new InvoiceComponentDTO();
+        invoice = new Invoice();
+        editBtn = false;
+        delBtn = false;
+        createBtn = false;
+        errorInvoice = "";
+        RefreshState();
+    }
+    public void AddDetails(InvoiceDetail invoiceDetail)
+    {
+        this.componentDTO.Details.Add(invoiceDetail);
+        StateHasChanged();
+    }
+}

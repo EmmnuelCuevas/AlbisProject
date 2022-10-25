@@ -1,0 +1,108 @@
+﻿@using DataLayer.Models
+@using DataLogic.Repositories
+@using DataLogic.Helpers
+@inject ProductRepository _productRepository
+
+
+<div class="">
+
+    <h4><i class="fas fa-plus-circle" style="color: #667EEA;"></i>  @addText.ToUpper()</h4>
+
+    <div class="dropdown-divider" style="padding-bottom:1.5rem; "></div>
+    <EditForm Model="@product" OnValidSubmit="@Create">
+        <DataAnnotationsValidator />
+
+        <div class="box-input">
+            <div class="col-md-4 input-box mb-4">
+                <h6><strong>Nombre</strong> </h6>
+                <InputText class="form-control  user-inputs " @bind-Value="@product.Name"> </InputText>
+                <ValidationMessage For="() => product.Name" />
+            </div>
+            <div class=" col-md-4 input-box mb-4">
+                <h6><strong>Precio</strong> </h6>
+                <InputNumber class="form-control  user-inputs " @bind-Value="@product.Price" ></InputNumber>
+                <ValidationMessage For="() => product.Price" />
+            </div>
+            <div class=" col-md-4 input-box mb-4">
+                <h6><strong>Cantidad</strong> </h6>
+                <InputNumber  class="form-control  user-inputs " @bind-Value="@product.Quantity"></InputNumber>
+                <ValidationMessage For="() => product.Quantity" />
+            </div>
+            <div class=" col-md-4 input-box mb-4">
+                <h6><strong>Aplica Impuesto</strong> </h6>
+                <InputCheckbox class="form-checkbox  user-inputs " @bind-Value="@product.HasTaxes"> </InputCheckbox>
+                <ValidationMessage For="() => product.HasTaxes" />
+            </div>
+           
+        </div>
+
+        <div class="opt-btn">
+            <button class="btn btn-lg text-white" style="background-color: #667EEA;" type="submit">
+                @addText
+            </button>
+            <button @onclick="CloseComponent" class="btn btn-lg  text-white" style="background-color: #A8A9AA;" type="button">
+                Cancelar
+            </button>
+        </div>
+    </EditForm>
+</div>
+
+@error
+
+@code {
+    [CascadingParameter]
+    public ProductsIndex _parent { get; set; }
+
+    [Parameter]
+    public bool update { get; set; }
+
+    [Parameter]
+    public Product product { get; set; }
+    private string addText = "Agregar";
+    private string error;
+    protected override void OnInitialized()
+    {
+        if (update)
+            addText = "Actualizar";
+    }
+
+    private void Create()
+    {
+        try
+        {
+            Result result;
+
+            if (!update)
+            {
+                product.AvailableQuantity = product.Quantity;
+                result = _productRepository.Create(product);
+            }
+            else
+            {
+                result = _productRepository.Update(product);
+            }
+
+            if (result.Success)
+            {
+                // add notification
+                _parent.RefreshState();
+                CloseComponent();
+            }
+
+        }
+        catch (Exception err)
+        {
+            error = err.ToString();
+        }
+        StateHasChanged();
+
+    }
+
+    private void CloseComponent()
+    {
+        if (update)
+            _parent.CloseEditComponent();
+        else
+            _parent.CloseCreateComponent();
+    }
+}

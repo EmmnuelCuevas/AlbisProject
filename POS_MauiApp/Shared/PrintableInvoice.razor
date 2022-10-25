@@ -1,0 +1,191 @@
+﻿@page "/print/{invoiceID}"
+@using DataLayer.Models
+@using DataLogic.Repositories
+@using System.Globalization
+@using Microsoft.EntityFrameworkCore
+@layout EmptyLayout
+@inject InvoiceRepository _invoiceRepository
+
+
+<div class="receipt-content">
+    <div class="container bootstrap snippets bootdey">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="invoice-wrapper">
+                    <div class="intro">
+                        <img src="src/img/PUNTALES&ANDAMIOS_LOGO.png" style="width:50%"/>
+                    </div>
+
+                    <div class="payment-info">
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <span>Factura No.</span>
+                                <strong>@invoice.ID</strong>
+                            </div>
+                            <div class="col-sm-6 text-right">
+                                <span>Fecha</span>
+                                <strong>@invoice.CreatedOn.ToLongDateString()</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="payment-details" style="border-bottom:2px solid #EBECEE; margin-bottom:2.5rem; padding-bottom:2rem;">
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <span>Cliente</span>
+                                <strong>
+                                    @invoice.Client.Name
+                                </strong>
+                                <p>
+                                    <span>
+                                        @invoice.Client.Address
+                                    </span>
+                                    <a href="#">
+                                        @invoice.Client.Rnc
+                                    </a>
+                                    <a href="#">
+                                        @invoice.Client.PhoneNumber
+                                    </a>
+                                </p>
+                            </div>
+                            <div class="col-sm-6 text-right">
+                                <span>Proyecto</span>
+                                <strong>
+                                    @invoice.Project.Name
+                                </strong>
+                                <p>
+                                    <span>
+                                        @invoice.Project.Address
+                                    </span>
+                                    <a href="#">
+                                        @invoice.Project.PersonInCharge
+                                    </a>
+                                    <a href="#">
+                                        @invoice.Project.PersonInChargePhoneNumber
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="table table-striped table-responsive">
+                        <thead>
+                            <tr>
+                                <th>
+                                    Producto
+                                </th>
+                                <th>
+                                    Cantidad
+                                </th>
+                                <th>
+                                    Precio / Unidad
+                                </th>
+                                <th>
+                                    SubTotal
+                                </th>
+                                <th>
+                                    Descuento
+                                </th>
+                                <th>
+                                    Impuestos
+                                </th>
+                                <th>
+                                    Total
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in invoice.InvoiceDetails)
+                            {
+                                <tr>
+                                    <th>
+                                        @item.Product.Name
+                                    </th>
+                                    <td>
+                                        @item.Quantity
+
+                                    </td>
+                                    <td>
+                                        @item.Price.ToString("N2", new CultureInfo("en-US"))
+
+                                    </td>
+                                    <td>
+                                        @item.SubTotal.ToString("N2", new CultureInfo("en-US"))
+
+                                    </td>
+                                    <td>
+                                        0.00
+                                    </td>
+                                    <td>
+                                        @if (item.Product.HasTaxes)
+                                        {
+                                            <span>@((item.Total - item.SubTotal).ToString("N2", new CultureInfo("en-US")))</span>
+                                        }
+                                        else
+                                        {
+                                            <span>0.00</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        $ @item.Total.ToString("N2", new CultureInfo("en-US"))
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <div class="line-items">
+
+                        <div class="headers clearfix">
+                        </div>
+                        <div class="total text-right">
+                            <p class="extra-notes">
+                                <strong>Extra Notes</strong>
+                                Please send all items at the same time to shipping address by next week.
+                                Thanks a lot.
+                            </p>
+                            <div class="field">
+                                Subtotal <span>$ @invoice.SubTotal.ToString("N2", new CultureInfo("en-US"))</span>
+                            </div>
+                            <div class="field">
+                                Impuestos <span>$ @((invoice.Total - invoice.SubTotal).ToString("N2", new CultureInfo("en-US")))</span>
+                            </div>
+                            <div class="field">
+                                Descuentos <span></span>
+                            </div>
+                            <div class="field grand-total">
+                                Total <span>$ @invoice.Total.ToString("N2", new CultureInfo("en-US"))</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="footer">
+                    Copyright © 2022, Puntales y andamios Agustini.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string invoiceID { get; set; }
+    public Invoice invoice = new Invoice();
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            invoice = _invoiceRepository.db.Invoices.Include(x => x.Client).Include(x => x.InvoiceDetails).ThenInclude(x => x.Product).Include(x => x.Project).FirstOrDefault(x => x.ID == invoiceID) ?? new Invoice();
+            StateHasChanged();
+        }
+        catch (Exception)
+        {
+
+            throw;
+        }
+    }
+
+}
