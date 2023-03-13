@@ -6,15 +6,20 @@
 @using DataLayer.Models
 @using BlazorApp.Pages.InvoicesDetails
 @using Microsoft.EntityFrameworkCore
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@using System.Globalization
+
 @inject InvoiceRepository _invoiceRepository
 @inject ClientRepository _clientRepository
 @inject InvoiceDetailRepository _invoiceDetailRepository
 @inject ProductRepository _productRepository
+@inject NcfRepository _ncfRepository
 @inject IJSRuntime _jsRuntime
 @inject NavigationManager _navigationManager
 
 <div class="card crud-card">
-    <h3> @errorInvoice </h3>
+    <h3 class="text-danger"> @errorInvoice </h3>
     <div style="display:flex; ">
         <div class=" justify-content-end" style="flex-direction:column;margin-right:2rem;">
             <h4>Cliente</h4>
@@ -23,15 +28,13 @@
         </div>
 
         <div class=" justify-content-end" style="flex-direction:column">
-            @if (componentDTO.Invoice.Client is not null)
-            {
-                <h4>Proyecto</h4>
-                <RadzenDropDown AllowClear="true" @bind-Value="@componentDTO.ProjectID" TValue="string" AllowVirtualization="true" Style=""
-                            AllowFiltering="true" Data=@componentDTO.Invoice.Client.Projects ValueProperty="ID" TextProperty="Name" />
-            }
+           
         </div>
     </div>
 
+    <div class="d-flex justify-content-end mr-2">
+        <button class=" btn btn-primary text-white" @onclick="CreateCotizacion">COTIZACION</button>
+    </div>
 
 
     <div class="card-body crud-card-body">
@@ -83,7 +86,10 @@
                 <a  class="btn btn-sm" @onclick="@OpenEditModal" style="margin-right:10px"><i class="fas fa-edit"></i> Editar</a>
                 <a  class="btn btn-sm" @onclick="@OpenDeleteModal" data-toggle="modal" data-target="#exampleModal"><i class="fas fa-trash-alt"></i> Eliminar</a>
             </div>
+       
             <div>
+                <a class="btn btn-primary text-white" @onclick="CreateInformalInvoice" style="margin-right:10px"><i class="fas fa-edit"></i> Facturar S/Comprobante </a>
+
                 <a class="btn btn-primary text-white" @onclick="CreateInvoice" style="margin-right:10px"><i class="fas fa-edit"></i> @(edit == true ? "MODIFICAR":"FACTURAR") </a>
             </div>
         </div>
@@ -197,18 +203,17 @@ else if (editBtn)
             
             if(!string.IsNullOrEmpty(id))
             {
-                oldInvoice = _invoiceRepository.db.Invoices.Include(x => x.Client).Include(x => x.InvoiceDetails).ThenInclude(x => x.Product).Include(x => x.Project).FirstOrDefault(x => x.ID == id);
-                invoice = _invoiceRepository.db.Invoices.Include(x=>x.Client).Include(x=>x.InvoiceDetails).ThenInclude(x=>x.Product).Include(x=>x.Project).FirstOrDefault(x=>x.ID== id);
+                oldInvoice = _invoiceRepository.db.Invoices.Include(x => x.Client).Include(x => x.InvoiceDetails).ThenInclude(x => x.Product).FirstOrDefault(x => x.ID == id);
+                invoice = _invoiceRepository.db.Invoices.Include(x=>x.Client).Include(x=>x.InvoiceDetails).ThenInclude(x=>x.Product).FirstOrDefault(x=>x.ID== id);
                 if(invoice != null)
                 {
                     componentDTO.Invoice = invoice;
-                    componentDTO.ProjectID = invoice.ProjectID;
                     componentDTO.Details = invoice.InvoiceDetails.ToList();
                     edit = true;
                 }
             }else
             {
-                componentDTO.Clients = _clientRepository.db.Clients.Include(b => b.Projects).ToList();
+                componentDTO.Clients = _clientRepository.db.Clients.ToList();
             }
             componentDTO.Products = _productRepository.GetAll();
         }
@@ -235,9 +240,21 @@ else if (editBtn)
                 StateHasChanged();
                 return;
             }
+            if (componentDTO.Invoice.Client is null)
+            {
+                error = "Elegir cliente";
+                StateHasChanged();
+                return;
+            }
+            if (componentDTO.Invoice.Client.IsGob)
+            {
+                currentDetail.Price  = currentDetail.Product.GobPrice;
+                
+            }else{
+                currentDetail.Price  = currentDetail.Product.Price;
+            }
             currentDetail.ProductID = currentDetail.Product.ID;
             currentDetail.Discount = 0;
-            currentDetail.Price  = currentDetail.Product.Price;
             currentDetail.SubTotal = _invoiceDetailRepository.GetSubTotal(currentDetail);
             currentDetail.Total = _invoiceDetailRepository.GetTotal(currentDetail);
             currentDetail.InvoiceID = componentDTO.Invoice.ID;
@@ -308,12 +325,7 @@ else if (editBtn)
                 StateHasChanged();
                 return;
             }
-            if (componentDTO.ProjectID is null)
-            {
-                errorInvoice = "Elegir proyecto";
-                StateHasChanged();
-                return;
-            }
+            
 
             if (!componentDTO.Details.Any())
             {
@@ -324,7 +336,33 @@ else if (editBtn)
 
             @if (!edit)
             {
-                componentDTO.CreateInvoice(componentDTO.Invoice.Client.ID, componentDTO.ProjectID);
+                componentDTO.CreateInvoice(componentDTO.Invoice.Client.ID);
+
+                // ncf 
+                var isNcf = _invoiceRepository.db.NCFs.Where(x => x.IsActive == true ).FirstOrDefault();
+                string ncfInvoice = "";
+                if (isNcf is not null)
+                {
+                    if (componentDTO.Invoice.Client.IsGob)
+                    {
+                        if ((isNcf.ActualGobNCF) <= isNcf.EndGobNCF )
+                        {
+                            ncfInvoice = $"{isNcf.GobNCF}{isNcf.ActualGobNCF}";
+                            isNcf.ActualGobNCF += 1;
+                        }
+                    }
+                    else
+                    {
+                        if ((isNcf.ActualNCF ) <= isNcf.EndNCF )
+                        {
+                            ncfInvoice = $"{isNcf.NormalNCF}{isNcf.ActualNCF}";
+                            isNcf.ActualNCF += 1;
+                        }
+                    }
+                    _ncfRepository.Update(isNcf);
+                }
+              
+                componentDTO.Invoice.NCF = ncfInvoice;
                 var result = _invoiceRepository.Create(componentDTO.Invoice);
                 if (result.Success)
                 {
@@ -335,9 +373,154 @@ else if (editBtn)
 
                         item.Product.AvailableQuantity -= item.Quantity;
                         _invoiceDetailRepository.Create(item);
-                        // weak spot . 
                     }
-                    await _jsRuntime.InvokeVoidAsync("open", $"print/{componentDTO.Invoice.ID}", "_blank");
+
+                    var invoice = _invoiceRepository.Get(componentDTO.Invoice.ID);
+                    JsonSerializerOptions options = new()
+                        {
+                            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+                            WriteIndented = true
+                        };
+                    var invoiceDto = new
+                    {
+                        Total = invoice.Total.ToString("N2",new CultureInfo("en-US")),
+                        Impuestos = invoice.Taxes,
+                        SubTotal = invoice.SubTotal,
+                        Fecha = invoice.CreatedOn.ToShortDateString(),
+                        Cliente= invoice.Client,
+                        Ncf = invoice.NCF,
+                        Details = invoice.InvoiceDetails.ToList()
+                    };
+
+                    var jsonInvoice = JsonSerializer.Serialize(invoiceDto, options);
+
+                    await _jsRuntime.InvokeVoidAsync("demoPDF",jsonInvoice);
+                    await _jsRuntime.InvokeVoidAsync("ConducePDF", jsonInvoice);
+                    //await _jsRuntime.InvokeVoidAsync("open", $"print/{componentDTO.Invoice.ID}", "_blank");
+                    CleanComponent();
+                    StateHasChanged();
+                }
+              
+            }
+            else
+            {
+                // eliminar todas l
+                foreach (var item in componentDTO.Details)
+                {
+                    if (item.Product.AvailableQuantity < item.Quantity)
+                        return;
+
+                    InvoiceDetail unmodifiedInvoiceDetail;
+                    using (var dbContext = new AppDbContext())
+                    {
+                       unmodifiedInvoiceDetail =  dbContext.InvoiceDetails.FirstOrDefault(x => x.ID == item.ID);
+                    }
+                  
+                    if(unmodifiedInvoiceDetail is not null)
+                    {
+                        var qtyDifference = unmodifiedInvoiceDetail.Quantity - item.Quantity;
+                        item.Product.AvailableQuantity += qtyDifference;
+                        _invoiceDetailRepository.Update(item);
+                    }
+                    else
+                    {
+                        item.Product.AvailableQuantity -= item.Quantity;
+                        _invoiceDetailRepository.Create(item);
+                    }
+
+                }
+                componentDTO.EditInvoice(componentDTO.Invoice);
+                var result = _invoiceRepository.Update(componentDTO.Invoice);
+                if (result.Success)
+                {
+                    var invoice = _invoiceRepository.Get(componentDTO.Invoice.ID);
+                    JsonSerializerOptions options = new()
+                        {
+                            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+                            WriteIndented = true
+                        };
+                    var invoiceDto = new
+                    {
+                        Total = invoice.Total.ToString("N2", new CultureInfo("en-US")),
+                        Impuestos = invoice.Taxes,
+                        SubTotal = invoice.SubTotal,
+                        Fecha = invoice.CreatedOn.ToShortDateString(),
+                        Cliente = invoice.Client,
+                        Ncf = invoice.NCF,
+                        Details = invoice.InvoiceDetails.ToList()
+                    };
+                    var jsonInvoice = JsonSerializer.Serialize(invoiceDto, options);
+                    await _jsRuntime.InvokeVoidAsync("demoPDF", jsonInvoice);
+                    await _jsRuntime.InvokeVoidAsync("ConducePDF", jsonInvoice);
+                    CleanComponent();
+                    StateHasChanged();
+                }
+            }
+
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    private async void CreateInformalInvoice()
+    {
+        try
+        {
+            if (componentDTO.Invoice.Client is null)
+            {
+                errorInvoice = "Elegir cliente";
+                StateHasChanged();
+                return;
+            }
+            
+
+            if (!componentDTO.Details.Any())
+            {
+                errorInvoice = "Elegir productos";
+                StateHasChanged();
+                return;
+            }
+
+            @if (!edit)
+            {
+                componentDTO.CreateInvoice(componentDTO.Invoice.Client.ID);
+                componentDTO.Invoice.NCF = "";
+                var result = _invoiceRepository.Create(componentDTO.Invoice);
+                if (result.Success)
+                {
+                    foreach (var item in componentDTO.Details)
+                    {
+                        if (item.Product.AvailableQuantity < item.Quantity)
+                            return;
+
+                        item.Product.AvailableQuantity -= item.Quantity;
+                        _invoiceDetailRepository.Create(item);
+                    }
+
+                    
+                    var invoice = _invoiceRepository.Get(componentDTO.Invoice.ID);
+                    JsonSerializerOptions options = new()
+                        {
+                            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+                            WriteIndented = true
+                        };
+                    var invoiceDto = new
+                    {
+                        Total = invoice.Total.ToString("N2",new CultureInfo("en-US")),
+                        Impuestos = invoice.Taxes,
+                        SubTotal = invoice.SubTotal,
+                        Fecha = invoice.CreatedOn.ToShortDateString(),
+                        Cliente= invoice.Client,
+                        Details = invoice.InvoiceDetails.ToList(),
+                        InvoiceNumber = invoice.InvoiceNumber
+                    };
+
+                    var jsonInvoice = JsonSerializer.Serialize(invoiceDto, options);
+
+                    await _jsRuntime.InvokeVoidAsync("FacturaInformalPDF",jsonInvoice);
+                    await _jsRuntime.InvokeVoidAsync("ConducePDF", jsonInvoice);
                     CleanComponent();
                     StateHasChanged();
                 }
@@ -373,16 +556,88 @@ else if (editBtn)
                 var result = _invoiceRepository.Update(componentDTO.Invoice);
                 if (result.Success)
                 {
-                    await _jsRuntime.InvokeVoidAsync("open", $"print/{componentDTO.Invoice.ID}", "_blank");
+                    var invoice = _invoiceRepository.Get(componentDTO.Invoice.ID);
+                    JsonSerializerOptions options = new()
+                        {
+                            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+                            WriteIndented = true
+                        };
+                    var invoiceDto = new
+                    {
+                        Total = invoice.Total.ToString("N2", new CultureInfo("en-US")),
+                        Impuestos = invoice.Taxes,
+                        SubTotal = invoice.SubTotal,
+                        Fecha = invoice.CreatedOn.ToShortDateString(),
+                        Cliente = invoice.Client,
+                        Details = invoice.InvoiceDetails.ToList(),
+                        InvoiceNumber = invoice.InvoiceNumber
+                    };
+
+                    var jsonInvoice = JsonSerializer.Serialize(invoiceDto, options);
+
+                    await _jsRuntime.InvokeVoidAsync("FacturaInformalPDF", jsonInvoice);
+                    await _jsRuntime.InvokeVoidAsync("ConducePDF", jsonInvoice);
+                    CleanComponent();
+                    StateHasChanged();
                 }
             }
 
-    }
+        }
         catch (Exception)
         {
             throw;
         }
     }
+
+    private async void CreateGobInvoice()
+    {
+        await  _jsRuntime.InvokeVoidAsync("demoPDF");
+    }
+
+    private async void CreateCotizacion()
+    {
+        var invoice = componentDTO.Invoice;
+        if (invoice is null)
+        {
+            return;
+        }
+        if (componentDTO.Invoice.Client is null)
+        {
+            errorInvoice = "Elegir cliente";
+            StateHasChanged();
+            return;
+        }
+
+
+        if (!componentDTO.Details.Any())
+        {
+            errorInvoice = "Elegir productos";
+            StateHasChanged();
+            return;
+        }
+
+        componentDTO.CreateInvoice(componentDTO.Invoice.Client.ID);
+
+        JsonSerializerOptions options = new()
+            {
+                ReferenceHandler = ReferenceHandler.IgnoreCycles,
+                WriteIndented = true
+            };
+
+        var invoiceDto = new
+        {
+            Total = invoice.Total.ToString("N2", new CultureInfo("en-US")),
+            Impuestos = invoice.Taxes,
+            SubTotal = invoice.SubTotal,
+            Fecha = invoice.CreatedOn.ToShortDateString(),
+            Cliente = invoice.Client,
+            Ncf = invoice.NCF,
+            Details = componentDTO.Details
+        };
+        var jsonInvoice = JsonSerializer.Serialize(invoiceDto, options);
+        await _jsRuntime.InvokeVoidAsync("CotizacionPDF",jsonInvoice);
+    }
+
     private void Delete()
     {
 
@@ -435,7 +690,7 @@ else if (editBtn)
     {
         try
         {
-            componentDTO.Clients = _clientRepository.db.Clients.Include(b => b.Projects).ToList();
+            componentDTO.Clients = _clientRepository.db.Clients.ToList();
             componentDTO.Products = _productRepository.GetAll();
             StateHasChanged();
         }

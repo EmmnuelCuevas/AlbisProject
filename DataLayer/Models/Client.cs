@@ -12,10 +12,10 @@ namespace DataLayer.Models
         public string Address { get; set; }
         public string? Address1 { get; set; }
 
+        public bool IsGob { get; set; }
         public string? Rnc { get; set; }
 
         public string? PhoneNumber { get; set; }
-        public virtual ICollection<Project> Projects { get; set; }
         public virtual ICollection<Debt> Debts { get; set; }
 
     }

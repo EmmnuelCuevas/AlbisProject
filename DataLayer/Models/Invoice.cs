@@ -6,10 +6,9 @@ namespace DataLayer.Models
     {
         [ForeignKey("Client")]
         public string ClientID { get; set; }
-        [ForeignKey("Project")]
-        public string ProjectID { get; set; }
-
-        public string InvoiceNumber { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int InvoiceNumber { get; set; }
+        public string NCF { get; set; }
         public bool IsCredit { get; set; }
         public float SubTotal { get; set; }
         public float? Discount { get; set; }
@@ -17,7 +16,6 @@ namespace DataLayer.Models
         public float Total { get; set; }
         public virtual ICollection<InvoiceDetail> InvoiceDetails { get; set; }
         public virtual Client Client { get; set; }
-        public virtual Project Project { get; set; }
 
     }
 }

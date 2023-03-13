@@ -1,0 +1,142 @@
+﻿@using DataLayer.Models
+@using DataLogic.Repositories
+@using DataLogic.Helpers
+@inject NcfRepository _ncfRepository
+<style>
+    .card-hd {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+</style>
+<div class="">
+
+    <div class="card-hd">
+        <h4><i class="fas fa-plus-circle" style="color: #667EEA;"></i>  @addText.ToUpper()</h4>
+    </div>
+
+    <div class="dropdown-divider" style="padding-bottom:1.5rem; "></div>
+    <EditForm Model="@client" OnValidSubmit="@Create">
+        <DataAnnotationsValidator />
+        <div class="box-input row">
+            <div class="col-md-4 input-box mb-4">
+                <h6><strong>Prefijo Gubernamental</strong> </h6>
+                <InputText class="form-control  user-inputs " @bind-Value="@client.GobNCF"> </InputText>
+                <ValidationMessage For="() => client.GobNCF" />
+            </div>
+           
+            <div class=" col-md-4 input-box mb-4">
+                <h6><strong>Prefijo Normal</strong> </h6>
+                <InputText class="form-control  user-inputs " @bind-Value="@client.NormalNCF"> </InputText>
+                <ValidationMessage For="() => client.NormalNCF" />
+            </div>
+
+            <div class=" col-md-4 input-box mb-4">
+                <h6><strong>Numeración Inicial</strong> </h6>
+                <RadzenNumeric Min="0"  class="form-control  user-inputs " @bind-Value="@client.StartNCF"> </RadzenNumeric>
+                <ValidationMessage For="() => client.StartNCF" />
+            </div>
+             <div class=" col-md-4 input-box mb-4">
+               <h6><strong>Numeración Actual</strong> </h6>
+                <RadzenNumeric Min="0" class="form-control  user-inputs " @bind-Value="@client.ActualNCF"> </RadzenNumeric>
+                <ValidationMessage For="() => client.ActualNCF" />
+            </div>
+
+            <div class=" col-md-4 input-box mb-4">
+                <h6><strong>Numeración Final</strong> </h6>
+                <RadzenNumeric Min="1" class="form-control  user-inputs " @bind-Value="@client.EndNCF"> </RadzenNumeric>
+                <ValidationMessage For="() => client.EndNCF" />
+            </div>
+
+            <div class=" col-md-4 input-box mb-4">
+                <h6><strong>Numeración Gob Inicial</strong> </h6>
+                <RadzenNumeric Min="0" class="form-control  user-inputs " @bind-Value="@client.StartGobNCF"> </RadzenNumeric>
+                <ValidationMessage For="() => client.StartNCF" />
+            </div>
+            <div class=" col-md-4 input-box mb-4">
+                <h6><strong>Numeración Gob Actual</strong> </h6>
+                <RadzenNumeric Min="0" class="form-control  user-inputs " @bind-Value="@client.ActualGobNCF"> </RadzenNumeric>
+                <ValidationMessage For="() => client.ActualNCF" />
+            </div>
+
+            <div class=" col-md-4 input-box mb-4">
+                <h6><strong>Numeración Gob Final</strong> </h6>
+                <RadzenNumeric Min="1" class="form-control  user-inputs " @bind-Value="@client.EndGobNCF"> </RadzenNumeric>
+                <ValidationMessage For="() => client.EndNCF" />
+            </div>
+
+            <div class=" col-md-4 input-box mb-4">
+                <h6><strong>Esta Activo?</strong> </h6>
+                <RadzenCheckBox class="form-control  user-inputs " @bind-Value="@client.IsActive"> </RadzenCheckBox>
+                <ValidationMessage For="() => client.IsActive" />
+            </div>
+        </div>
+
+        <div class="opt-btn">
+            <button class="btn btn-lg text-white" style="background-color: #667EEA;" type="submit">
+                @addText
+            </button>
+            <button @onclick="CloseComponent" class="btn btn-lg  text-white" style="background-color: #A8A9AA;" type="button">
+                Cancelar
+            </button>
+        </div>
+    </EditForm>
+</div>
+
+
+@code {
+    [CascadingParameter]
+    public NCFIndex _parent { get; set; }
+
+    [Parameter]
+    public bool update { get; set; }
+
+    [Parameter]
+    public NCF client { get; set; }
+    private string addText = "Agregar";
+    private string error;
+    protected override void OnInitialized()
+    {
+        if (update)
+            addText = "Actualizar";
+    }
+
+    private void Create()
+    {
+        try
+        {
+            Result result;
+
+            if (!update)
+            {
+                result = _ncfRepository.Create(client);
+            }
+            else
+            {
+                result = _ncfRepository.Update(client);
+            }
+
+            if (result.Success)
+            {
+                // add notification
+                _parent.RefreshState();
+            }
+
+        }
+        catch (Exception err)
+        {
+            error = err.ToString();
+        }
+        StateHasChanged();
+
+    }
+
+    private void CloseComponent()
+    {
+        if (update)
+            _parent.CloseEditComponent();
+        else
+            _parent.CloseCreateComponent();
+    }
+}

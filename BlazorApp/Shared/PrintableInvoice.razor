@@ -13,7 +13,7 @@
             <div class="col-md-12">
                 <div class="invoice-wrapper">
                     <div class="intro">
-                        <img src="src/img/PUNTALES&ANDAMIOS_LOGO.png" style="width:50%"/>
+                        <img src="src/img/mediExpress.jpg" style="width:50%"/>
                     </div>
 
                     <div class="payment-info">
@@ -51,17 +51,13 @@
                             <div class="col-sm-6 text-right">
                                 <span>Proyecto</span>
                                 <strong>
-                                    @invoice.Project.Name
                                 </strong>
                                 <p>
                                     <span>
-                                        @invoice.Project.Address
                                     </span>
                                     <a href="#">
-                                        @invoice.Project.PersonInCharge
                                     </a>
                                     <a href="#">
-                                        @invoice.Project.PersonInChargePhoneNumber
                                     </a>
                                 </p>
                             </div>
@@ -178,7 +174,7 @@
     {
         try
         {
-            invoice = _invoiceRepository.db.Invoices.Include(x => x.Client).Include(x => x.InvoiceDetails).ThenInclude(x => x.Product).Include(x => x.Project).FirstOrDefault(x => x.ID == invoiceID) ?? new Invoice();
+            invoice = _invoiceRepository.db.Invoices.Include(x => x.Client).Include(x => x.InvoiceDetails).ThenInclude(x => x.Product).FirstOrDefault(x => x.ID == invoiceID) ?? new Invoice();
             StateHasChanged();
         }
         catch (Exception)

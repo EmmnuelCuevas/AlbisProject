@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace DataLogic.Repositories
 {
-    public class ProjectRepository : Repository<Project>
+    public class NcfRepository : Repository<NCF>
     {
-        public ProjectRepository(AppDbContext _db) : base(_db)
+        public NcfRepository(AppDbContext _db) : base(_db)
         {
         }
     }

@@ -3,6 +3,7 @@ using System;
 using DataLayer.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DataLayer.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20221026203420_gob added")]
+    partial class gobadded
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -93,18 +95,12 @@ namespace DataLayer.Migrations
                     b.Property<float?>("Discount")
                         .HasColumnType("real");
 
-                    b.Property<int>("InvoiceNumber")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InvoiceNumber"));
+                    b.Property<string>("InvoiceNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsCredit")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("NCF")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<float>("SubTotal")
                         .HasColumnType("real");
@@ -160,48 +156,6 @@ namespace DataLayer.Migrations
                     b.HasIndex("ProductID");
 
                     b.ToTable("InvoiceDetails");
-                });
-
-            modelBuilder.Entity("DataLayer.Models.NCF", b =>
-                {
-                    b.Property<string>("ID")
-                        .HasColumnType("text");
-
-                    b.Property<int>("ActualGobNCF")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ActualNCF")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("EndGobNCF")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("EndNCF")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("GobNCF")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("NormalNCF")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("StartGobNCF")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("StartNCF")
-                        .HasColumnType("integer");
-
-                    b.HasKey("ID");
-
-                    b.ToTable("NCFs");
                 });
 
             modelBuilder.Entity("DataLayer.Models.Product", b =>

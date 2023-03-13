@@ -24,10 +24,16 @@
                 <ValidationMessage For="() => product.Price" />
             </div>
             <div class=" col-md-4 input-box mb-4">
-                <h6><strong>Cantidad</strong> </h6>
-                <InputNumber  class="form-control  user-inputs " @bind-Value="@product.Quantity"></InputNumber>
-                <ValidationMessage For="() => product.Quantity" />
+                <h6><strong>Precio Gobirno</strong> </h6>
+                <InputNumber class="form-control  user-inputs " @bind-Value="@product.GobPrice" ></InputNumber>
+                <ValidationMessage For="() => product.GobPrice" />
             </div>
+            <div class=" col-md-4 input-box mb-4">
+                <h6><strong>Cantidad</strong> </h6>
+                <InputNumber class="form-control  user-inputs " @bind-Value="@product.AvailableQuantity"></InputNumber>
+                <ValidationMessage For="() => product.AvailableQuantity" />
+            </div>
+            
             <div class=" col-md-4 input-box mb-4">
                 <h6><strong>Aplica Impuesto</strong> </h6>
                 <InputCheckbox class="form-checkbox  user-inputs " @bind-Value="@product.HasTaxes"> </InputCheckbox>
@@ -74,7 +80,6 @@
 
             if (!update)
             {
-                product.AvailableQuantity = product.Quantity;
                 result = _productRepository.Create(product);
             }
             else
@@ -95,7 +100,6 @@
             error = err.ToString();
         }
         StateHasChanged();
-
     }
 
     private void CloseComponent()

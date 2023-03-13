@@ -16,14 +16,14 @@ namespace DataLayer.Context
             if (!optionsBuilder.IsConfigured)
             {
                 var connetionString = System.Configuration.ConfigurationManager.AppSettings["DefaultConnection"];
-                optionsBuilder.UseNpgsql("Server=localhost;port=5432;Database=AG;User Id=postgres;Password=Axcom1;");
+                optionsBuilder.UseNpgsql("Server=localhost;port=5432;Database=MediExpress;User Id=postgres;Password=Axcom1;");
             }
         }
         public DbSet<Client> Clients { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<InvoiceDetail> InvoiceDetails { get; set;  }
         public DbSet<Debt> Debts { get; set; }
-        public DbSet<Project> Projects { get; set; }
         public DbSet<Product> Products { get; set; }
+        public DbSet<NCF> NCFs { get; set; }
     }
 }

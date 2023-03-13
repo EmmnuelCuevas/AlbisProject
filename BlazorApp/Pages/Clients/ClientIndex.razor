@@ -8,7 +8,7 @@
 
     <div class="card-body crud-card-body">
 
-        <RadzenDataGrid Data="@client" TItem="Client" PagerPosition="PagerPosition.Bottom" AllowPaging="true" AllowSorting="true" PageSize="10"
+        <RadzenDataGrid Data="@client.OrderBy(x=>x.Name)" TItem="Client" PagerPosition="PagerPosition.Bottom" AllowPaging="true" AllowSorting="true" PageSize="10"
                         SelectionMode="DataGridSelectionMode.Single" @bind-Value=@selected>
             <Columns>
 

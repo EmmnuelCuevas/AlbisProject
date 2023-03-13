@@ -2,7 +2,6 @@
 @using DataLogic.Repositories
 @using  DataLogic.Helpers
 @inject ClientRepository _clientRepository
-@inject ProjectRepository _projectRepository
 <style>
     .card-hd
     {
@@ -16,18 +15,11 @@
 
     <div class="card-hd">
         <h4><i class="fas fa-plus-circle" style="color: #667EEA;"></i>  @addText.ToUpper()</h4>
-        @if(update){
-            <button class="btn btn-success" @onclick="() => createProyect = true">Agregar Proyecto</button>
-        }
-        
     </div>
 
     <div class="dropdown-divider" style="padding-bottom:1.5rem; "></div>
-    @if (!createProyect)
-    {
         <EditForm Model="@client" OnValidSubmit="@Create">
         <DataAnnotationsValidator />
-
         <div class="box-input row">
             <div class="col-md-4 input-box mb-4">
                     <h6><strong>Nombre</strong> </h6>
@@ -39,6 +31,7 @@
                     <RadzenMask Mask="***-*****-*" class="form-control  user-inputs " CharacterPattern="[0-9]" Placeholder="000-00000-0" Name="RNC" @bind-Value="@client.Rnc" />
                     <ValidationMessage For="() => client.Rnc" />
                 </div>
+         
                 <div class=" col-md-4 input-box mb-4">
                     <h6><strong>Numero Telefono</strong> </h6>
                     <RadzenMask Mask="***-***-****" CharacterPattern="[0-9]" class="form-control  user-inputs " Placeholder="(000)-000-0000"  @bind-Value="@client.PhoneNumber" />
@@ -54,6 +47,12 @@
                     <InputText class="form-control  user-inputs " @bind-Value="@client.Address1"> </InputText>
                     <ValidationMessage For="() => client.Address1" />
                 </div>
+                <div class=" col-md-4 input-box mb-4">
+                    <h6><strong>Cliente Gubernamental</strong> </h6>
+                    <RadzenCheckBox class="form-control  user-inputs " @bind-Value="@client.IsGob"> </RadzenCheckBox>
+                    <ValidationMessage For="() => client.IsGob" />
+                </div>
+
         </div>
 
         <div class="opt-btn">
@@ -65,50 +64,8 @@
             </button>
         </div>
         </EditForm>
-    }
-    else
-    {
-    <EditForm Model="@project" OnValidSubmit="@CreateProyect">
-        <DataAnnotationsValidator />
-
-        <div class="box-input row">
-            <div class="col-md-4 input-box mb-4">
-                    <h6><strong>Nombre Proyecto</strong> </h6>
-                    <InputText class="form-control  user-inputs " @bind-Value="@project.Name"> </InputText>
-                    <ValidationMessage For="() => client.Name" />
-                </div>
-                <div class=" col-md-4 input-box mb-4">
-                    <h6><strong>Dirección</strong> </h6>
-                    <InputText class="form-control  user-inputs "@bind-Value="@project.Address"> </InputText>
-                    <ValidationMessage For="() => project.Address" />
-                </div>
-                <div class=" col-md-4 input-box mb-4">
-                    <h6><strong>Persona a Cargo</strong> </h6>
-                    <InputText class="form-control  user-inputs "@bind-Value="@project.PersonInCharge"> </InputText>
-                    <ValidationMessage For="() => project.PersonInCharge" />
-                </div>
-                  <div class=" col-md-4 input-box mb-4">
-                    <h6><strong>Persona a Cargo</strong> </h6>
-                    <RadzenMask Mask="***-***-****" CharacterPattern="[0-9]" class="form-control  user-inputs " Placeholder="(000)-000-0000" @bind-Value="@project.PersonInChargePhoneNumber" />
-                    <ValidationMessage For="() => project.PersonInChargePhoneNumber" />
-                </div>
-        
-        </div>
-
-        <div class="opt-btn">
-            <button class="btn btn-lg text-white" style="background-color: #667EEA;" type="submit">
-                @addText
-            </button>
-            <button @onclick="CloseComponent" class="btn btn-lg  text-white" style="background-color: #A8A9AA;" type="button">
-                Cancelar
-            </button>
-        </div>
-        </EditForm>
-    }
-
 </div>
 
-@error
 
 @code {
     [CascadingParameter]
@@ -119,8 +76,6 @@
 
     [Parameter]
     public Client client { get; set; }
-    private Project project = new Project();
-    private bool createProyect;
     private string addText = "Agregar";
     private string error;
     protected override void OnInitialized()
@@ -157,29 +112,6 @@
         }
         StateHasChanged();
 
-    }
-
-    private void CreateProyect()
-    {
-        try
-        {
-            createProyect = true;
-            if(update)
-            {
-                project.ClientID = client.ID;
-                var result = _projectRepository.Create(project);
-                if (result.Success)
-                {
-                    CloseComponent();
-                }
-            }
-
-        }
-        catch (Exception)
-        {
-            
-            throw;
-        }
     }
 
     private void CloseComponent()

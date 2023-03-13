@@ -9,13 +9,13 @@
 
     <div class="card-body" style="padding-left: 0; padding-right: 2.5rem;">
 
-        <RadzenDataGrid Data="@products" TItem="Product" PagerPosition="PagerPosition.Bottom" AllowPaging="true" AllowSorting="true" PageSize="10"
+        <RadzenDataGrid Data="@products.OrderBy(x=>x.Name)" TItem="Product" PagerPosition="PagerPosition.Bottom" AllowPaging="true" AllowSorting="true" PageSize="10"
                         SelectionMode="DataGridSelectionMode.Single" @bind-Value=@selected>
             <Columns>
 
                 <RadzenDataGridColumn TItem="Product" Property="Name" Title="Nombre" />
                 <RadzenDataGridColumn TItem="Product" Property="Price" Title="Precio S/Impuesto" />
-                <RadzenDataGridColumn TItem="Product" Property="Quantity" Title="Cantidad" />
+                <RadzenDataGridColumn TItem="Product" Property="GobPrice" Title="Precio Gubernamental" />
                 <RadzenDataGridColumn TItem="Product" Property="AvailableQuantity" Title="Cantidad Disponible" />
                 <RadzenDataGridColumn TItem="Product" Property="HasTaxes" Title="Impuestos">
                     <Template Context="data">
@@ -90,8 +90,6 @@
                 </div>
             </div>
         }
-
-
     </div>
 </div>
 

@@ -1,33 +1,24 @@
-﻿@page "/Invoices"
+﻿@page "/configNcf"
 @using DataLogic.Repositories
 @using DataLayer.Models
-@using Microsoft.EntityFrameworkCore
-@inject InvoiceRepository _invoiceRepository
-@inject NavigationManager _navigationManager
+@inject NcfRepository _ncfRepository
 
 <div class="card crud-card">
-    <h4><strong> Facturas </strong></h4>
+    <h4><strong> Configuración NCF </strong></h4>
 
     <div class="card-body crud-card-body">
 
-        <RadzenDataGrid Data="@invoices.OrderByDescending(x=>x.CreatedOn)" TItem="Invoice" PagerPosition="PagerPosition.Bottom" AllowPaging="true" AllowSorting="true" PageSize="10"
+        <RadzenDataGrid Data="@ncfs" TItem="NCF" PagerPosition="PagerPosition.Bottom" AllowPaging="true" AllowSorting="true" PageSize="10"
                         SelectionMode="DataGridSelectionMode.Single" @bind-Value=@selected>
             <Columns>
-                <RadzenDataGridColumn TItem="Invoice" Property="ClientID" Title="Cliente">
-                    <Template Context="data">
-                        @data.Client.Name
-                    </Template>
-                </RadzenDataGridColumn>  
-                <RadzenDataGridColumn TItem="Invoice" Property="ClientID" Title="RNC">
-                    <Template Context="data">
-                        @data.Client.Rnc
-                    </Template>
-                </RadzenDataGridColumn> 
-                <RadzenDataGridColumn TItem="Invoice" Property="SubTotal" Title="SubTotal" />
-                <RadzenDataGridColumn TItem="Invoice" Property="Taxes" Title="Impuestos" />
-                <RadzenDataGridColumn TItem="Invoice" Property="Discount" Title="Descuentos" />
-                <RadzenDataGridColumn TItem="Invoice" Property="Total" Title="Total" />
-                <RadzenDataGridColumn TItem="Invoice" Property="CreatedOn" Title="Fecha Realización" />
+
+                <RadzenDataGridColumn TItem="NCF" Property="StartNCF" Title="Numeración Inicial" />
+                <RadzenDataGridColumn TItem="NCF" Property="ActualNCF" Title="Numeración Actual" />
+                <RadzenDataGridColumn TItem="NCF" Property="EndNCF" Title="Numeración Final" />
+                <RadzenDataGridColumn TItem="NCF" Property="StartGobNCF" Title="Numeración Gob Inicial" />
+                <RadzenDataGridColumn TItem="NCF" Property="ActualGobNCF" Title="Numeración Gob Actual" />
+                <RadzenDataGridColumn TItem="NCF" Property="EndGobNCF" Title="Numeración Gob Final" />
+                <RadzenDataGridColumn TItem="NCF" Property="IsActive" Title="Activo" />
             </Columns>
         </RadzenDataGrid>
 
@@ -40,20 +31,32 @@
                 <a @onclick="@OpenDeleteModal" data-toggle="modal" data-target="#exampleModal"><i class="fas fa-trash-alt"></i> Eliminar</a>
             </div>
             <div>
-                <a href="/" ><i class="fas fa-plus-circle" style="color: #667EEA;"></i> Facturar</a>
+                <a @onclick="@OpenCreateModal"><i class="fas fa-plus-circle" style="color: #667EEA;"></i> Agregar NCF</a>
             </div>
         </div>
 
 
 
-        @if (editBtn)
+        @if (createBtn)
+        {
+            <div class="card" style="margin-top:5rem;">
+
+                <div class="card-body ">
+                    <CascadingValue Value="this">
+                        <NCFCreateUpdate update=false client="new NCF()"></NCFCreateUpdate>
+                    </CascadingValue>
+                </div>
+            </div>
+
+        }
+        else if (editBtn)
         {
             <div class="card" style="margin-top:5rem;">
                 <div class="card-body ">
                     @if (selected != null)
                     {
                         <CascadingValue Value="this">
-                           @* <ClientCreateUpdate update=true client="selected[0]"></ClientCreateUpdate>*@
+                            <NCFCreateUpdate update=true client="selected[0]"></NCFCreateUpdate>
                         </CascadingValue>
                     }
                 </div>
@@ -85,15 +88,15 @@
 </div>
 
 @code {
-    private List<Invoice> invoices = new List<Invoice>();
-    private IList<Invoice> selected ;
+    private List<NCF> ncfs = new List<NCF>();
+    private IList<NCF> selected;
     private bool createBtn;
     private bool editBtn;
     private bool delBtn;
 
     protected override void OnInitialized()
     {
-        RefreshState();
+        ncfs = _ncfRepository.GetAll();
     }
     private void Delete()
     {
@@ -120,29 +123,35 @@
 
     public void OpenEditModal()
     {
-        if (selected is not null && selected[0] is not null )
+        if (selected != null)
         {
-            _navigationManager.NavigateTo($"/invoicesedit/{selected[0].ID}");
+
+            this.createBtn = false;
+            this.delBtn = false;
+            this.editBtn = true;
+        }
+        else
+        {
         }
     }
 
     public void OpenDeleteModal()
     {
-      
+        if (selected != null)
+        {
+            this.createBtn = false;
+            this.editBtn = false;
+            delBtn = true;
+        }
+        else
+        {
+        }
+        StateHasChanged();
     }
 
     public void RefreshState()
-    { 
-        try
-        {
-            invoices = _invoiceRepository.db.Invoices.Include(x=>x.Client).ToList();
-            StateHasChanged();
-        }
-        catch (Exception)
-        {
-            
-            throw;
-        }
-    
+    {
+        ncfs = _ncfRepository.GetAll();
+        StateHasChanged();
     }
 }

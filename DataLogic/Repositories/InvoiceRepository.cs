@@ -26,7 +26,6 @@ namespace DataLogic.Repositories
             invoice.Total = details.Sum(x => x.Total);
             invoice.Taxes = invoice.Total - invoice.SubTotal;
             invoice.ClientID = clientID;
-            invoice.ProjectID = projectID;
             return invoice;
         }
 

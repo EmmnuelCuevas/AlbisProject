@@ -15,7 +15,7 @@ builder.Services.AddScoped<ProductRepository>();
 builder.Services.AddScoped<ClientRepository>();
 builder.Services.AddScoped<InvoiceDetailRepository>();
 builder.Services.AddScoped<InvoiceRepository>();
-builder.Services.AddScoped<ProjectRepository>();
+builder.Services.AddScoped<NcfRepository>();
 
 var app = builder.Build();
 

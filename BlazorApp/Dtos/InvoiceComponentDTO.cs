@@ -17,21 +17,18 @@ namespace BlazorApp.Dtos
         public List<Client> Clients { get; set; }
         public List<Product> Products { get; set; }
         public string ClientID { get; set; }
-        public string ProjectID { get; set; }
 
 
-        public void CreateInvoice(string clientID, string projectID, bool credit = false)
+        public void CreateInvoice(string clientID,  bool credit = false)
         {
             var subtotal = Details.Sum(x => x.SubTotal);
             var total = Details.Sum(x => x.Total);
-            this.Invoice.ProjectID = projectID;
             this.Invoice.ClientID = clientID;
             this.Invoice.SubTotal = subtotal;
             this.Invoice.Total = total;
             this.Invoice.Taxes = total - subtotal;
             this.Invoice.IsCredit = credit;
             //change
-            this.Invoice.InvoiceNumber = "test";
         }
 
         public void EditInvoice(Invoice invoice)
@@ -43,7 +40,6 @@ namespace BlazorApp.Dtos
             this.Invoice.Total = total;
             this.Invoice.Taxes = (float)taxes;
             //change
-            this.Invoice.InvoiceNumber = "test";
         }
     }
 }
