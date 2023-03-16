@@ -39,8 +39,12 @@
                 <a @onclick="@OpenDeleteModal" data-toggle="modal" data-target="#exampleModal"><i class="fas fa-trash-alt"></i> Eliminar</a>
             </div>
             <div>
+                <a @onclick="@OpenRecieveModal"><i class="fas fa-plus-circle" style="color: #667EEA;"></i> Recibir Producto</a>
+            </div>
+            <div>
                 <a @onclick="@OpenCreateModal"><i class="fas fa-plus-circle" style="color: #667EEA;"></i> Agregar Producto</a>
             </div>
+            
         </div>
 
 
@@ -90,15 +94,54 @@
                 </div>
             </div>
         }
+        @if (recBtn)
+        { 
+            <div class="mt-4">
+               <EditForm Model="@receiver" OnValidSubmit="@Update">
+                <DataAnnotationsValidator />
+
+                    <div class="box-input">
+                        <div class=" col-md-6 input-box mb-4">
+                            <h6><strong>Cantidad a recibir</strong> </h6>
+                            <InputNumber class="form-checkbox  user-inputs " @bind-Value="@receiver.Number" Min=0> </InputNumber>
+                        </div>
+                    </div>
+
+                    <div class="opt-btn">
+                        <button class="btn btn-lg text-white" style="background-color: #667EEA;" type="submit">
+                            Recibir
+                        </button>
+                        <button @onclick="() => recBtn = false" class="btn btn-lg  text-white" style="background-color: #A8A9AA;" type="button">
+                            Cancelar
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+         
+        }
     </div>
 </div>
 
 @code {
+    public class Receiver
+    {
+        public int Number { get; set; }
+    }
+
     private List<Product> products = new List<Product>();
     private IList<Product> selected;
     private bool createBtn;
     private bool editBtn;
+    private bool recBtn;
     private bool delBtn;
+    private Receiver receiver = new Receiver();
+
+    void Update()
+    {
+        selected[0].AvailableQuantity += receiver.Number; 
+        selected[0].Quantity += receiver.Number; 
+        _productRepository.Update(selected[0]);
+    }
 
     protected override void OnInitialized()
     {
@@ -106,7 +149,7 @@
     }
     private void Delete()
     {
-
+        _productRepository.Remove(selected[0]);
     }
     public void CloseCreateComponent()
     {
@@ -123,7 +166,16 @@
     {
         this.editBtn = false;
         this.delBtn = false;
+        this.recBtn = false;
         this.createBtn = true;
+
+    }
+    public void OpenRecieveModal()
+    {
+        this.editBtn = false;
+        this.delBtn = false;
+        this.createBtn = false;
+        this.recBtn = true;
 
     }
 
@@ -134,6 +186,7 @@
 
             this.createBtn = false;
             this.delBtn = false;
+            this.recBtn = false;
             this.editBtn = true;
         }
         else
@@ -147,6 +200,7 @@
         {
             this.createBtn = false;
             this.editBtn = false;
+            this.recBtn = false;
             delBtn = true;
         }
         else
